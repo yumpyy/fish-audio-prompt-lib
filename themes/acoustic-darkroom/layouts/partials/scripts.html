@@ -5,11 +5,13 @@
 {{ $searchJS := resources.Get "js/search.js" | js.Build | resources.Minify }}
 {{ $playerJS := resources.Get "js/player.js" | js.Build | resources.Minify }}
 {{ $uiJS := resources.Get "js/ui.js" | js.Build | resources.Minify }}
+{{ $glowingJS := resources.Get "js/glowing.js" | js.Build | resources.Minify }}
 
 <script src="{{ $waveformJS.RelPermalink }}" defer></script>
 <script src="{{ $searchJS.RelPermalink }}" defer></script>
 <script src="{{ $playerJS.RelPermalink }}" defer></script>
 <script src="{{ $uiJS.RelPermalink }}" defer></script>
+<script src="{{ $glowingJS.RelPermalink }}" defer></script>
 
 <script>
   window.siteData = {

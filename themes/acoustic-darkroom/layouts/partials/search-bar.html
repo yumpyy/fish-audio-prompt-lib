@@ -1,11 +1,19 @@
 <!-- Search Section -->
 <div class="max-w-2xl mx-auto mb-12 flex flex-col items-center gap-4">
-  <div class="relative w-full group">
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256" class="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/60 pointer-events-none z-10">
-      <path d="M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z"/>
-    </svg>
-    <input id="search-input" type="text" class="w-full bg-[#0a0a0a] border border-white/[0.06] rounded-full py-3 pl-12 pr-4 text-on-surface placeholder:text-on-surface-variant/30 focus:outline-none focus:border-white/[0.12] focus:bg-[#0d0d0d] transition-all duration-200" placeholder="Search prompt library..." autocomplete="off"/>
+  <div id="search-wrap" class="group/input relative w-full rounded-full p-[1px] transition duration-300" style="background: rgba(255,255,255,0.06)">
+    <div class="relative w-full">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256" class="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/60 pointer-events-none z-10">
+        <path d="M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z"/>
+      </svg>
+      <input id="search-input" type="text" class="w-full border-none bg-[#0a0a0a] rounded-full py-3 pl-12 pr-4 text-on-surface placeholder:text-on-surface-variant/30 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 transition duration-200" placeholder="Search &quot;indian guy&quot; · #tag · @model · lang:hindi" autocomplete="off"/>
+    </div>
   </div>
+
+  <!-- Suggestions (populated by JS while typing) -->
+  <div id="search-suggestions" class="hidden flex flex-wrap justify-center items-center gap-2 w-full"></div>
+
+  <!-- Active filters (populated by JS) -->
+  <div id="active-filters" class="hidden flex flex-wrap justify-center items-center gap-2 w-full"></div>
 
   <div class="flex flex-wrap justify-center gap-2">
     <span class="text-label-mono text-[10px] text-on-surface-variant uppercase tracking-widest mr-2 self-center">Quick:</span>

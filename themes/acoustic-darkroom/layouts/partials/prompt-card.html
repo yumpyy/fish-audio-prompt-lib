@@ -28,48 +28,77 @@
   data-url="{{ .RelPermalink }}"
   data-audio="{{ $audio }}"
   style="animation: fadeSlideUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; animation-delay: {{ $totalDelay }}s;">
-  <article class="original-card group bg-[#0a0a0a] border border-[#1f1f1f] rounded-lg p-4 flex flex-col justify-between cursor-pointer relative z-10">
-    <div class="flex items-start justify-between mb-1">
-      <h3 class="font-body-md text-body-md font-bold text-on-surface truncate pr-2 group-hover:text-white transition-colors">{{ .Title }}</h3>
-      <button class="play-toggle text-on-surface-variant group-hover:text-primary-container transition-colors shrink-0 outline-none flex items-center justify-center bg-[#121212] p-1.5 rounded-full border border-[#1f1f1f] group-hover:border-primary-container group-hover:bg-primary-container/10 group-hover:scale-110 duration-300" data-audio="{{ $audio }}">
+  <article class="original-card glowing-card group bg-[#0a0a0a] border border-[#1f1f1f] rounded-xl p-4 flex flex-col cursor-pointer relative z-10 min-h-[210px]">
+    <!-- Top: Tags + NSFW (filter on click) -->
+    <div class="flex flex-wrap items-center gap-1.5 mb-3 min-h-[18px]">
+      {{ range first 3 .Params.tags }}
+        <button type="button" class="card-filter font-label-mono text-[9px] tracking-widest uppercase bg-white/[7%] border border-white/[10%] text-on-surface-variant px-1.5 py-0.5 rounded-full leading-none hover:bg-white/[12%] hover:border-primary/40 hover:text-white transition-all" data-filter="tag:{{ . }}">#{{ . }}</button>
+      {{ end }}
+      {{ if gt (len .Params.tags) 3 }}
+        <span class="font-label-mono text-[9px] tracking-widest uppercase bg-white/[5%] border border-white/[8%] text-on-surface-variant/60 px-1.5 py-0.5 rounded-full leading-none">+{{ sub (len .Params.tags) 3 }}</span>
+      {{ end }}
+      {{ if .Params.metadata.nsfw }}
+        <button type="button" class="card-filter font-label-mono text-[9px] tracking-widest uppercase bg-error/15 border border-error/20 text-error px-1.5 py-0.5 rounded-full leading-none hover:bg-error/25 transition-all" data-filter="nsfw:true">18+</button>
+      {{ end }}
+    </div>
+
+    <!-- Title + Description preview (user-provided body) -->
+    <div class="flex-1 min-h-0 mb-2">
+      <h3 class="font-body-md text-[15px] font-semibold leading-[1.25] text-on-surface line-clamp-2 group-hover:text-white transition-colors">{{ .Title }}</h3>
+      {{- $desc := trim .Plain " \n\r\t" -}}
+      {{- if $desc -}}
+        <p class="mt-1.5 text-[12.5px] leading-[1.5] text-on-surface-variant/65 line-clamp-2 font-normal">{{ $desc | truncate 90 }}</p>
+      {{- else -}}
+        <p class="mt-1.5 text-[12.5px] leading-[1.5] text-on-surface-variant/35 italic line-clamp-2">No description</p>
+      {{- end -}}
+    </div>
+
+    <!-- Audio row: Play + Waveform (previous style, no bg) -->
+    <div class="flex items-center gap-2.5 mt-auto">
+      <button class="play-toggle text-on-surface-variant group-hover:text-primary-container transition-colors shrink-0 outline-none flex items-center justify-center bg-[#121212] p-1.5 rounded-full border border-[#1f1f1f] group-hover:border-primary-container group-hover:bg-primary-container/10 group-hover:scale-110 duration-300" data-audio="{{ $audio }}" aria-label="Play">
         <svg class="play-icon-svg" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 256 256"><path d="M232.4,114.49,88.32,26.35a16,16,0,0,0-16.2-.3A15.86,15.86,0,0,0,64,39.87V216.13A15.94,15.94,0,0,0,80,232a16.07,16.07,0,0,0,8.36-2.35L232.4,141.51a15.81,15.81,0,0,0,0-27ZM80,215.94V40l143.83,88Z"/></svg>
         <svg class="pause-icon-svg hidden" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 256 256"><path d="M200,32H160a16,16,0,0,0-16,16V208a16,16,0,0,0,16,16h40a16,16,0,0,0,16-16V48A16,16,0,0,0,200,32Zm0,176H160V48h40ZM96,32H56A16,16,0,0,0,40,48V208a16,16,0,0,0,16,16H96a16,16,0,0,0,16-16V48A16,16,0,0,0,96,32Zm0,176H56V48H96Z"/></svg>
       </button>
+      <div class="flex-1 min-w-0">
+        {{ partial "waveform.html" (dict "audio" $audio) }}
+      </div>
     </div>
 
-    <!-- Waveform -->
-    {{ partial "waveform.html" (dict "audio" $audio) }}
-
-    <div class="flex items-center justify-between mt-auto pt-2 border-t border-[#1f1f1f]">
-      <span class="font-label-mono text-label-mono text-gray-300 bg-white/[7%] px-1.5 py-0.5 rounded text-[10px]">{{ .Params.model | default "Unknown" }}</span>
-      <span class="font-label-mono text-label-mono text-on-surface-variant text-[10px]">{{ .Params.language | default "??" }}</span>
-      <span class="duration-display font-label-mono text-label-mono text-outline text-[10px]">{{ .Params.duration | default "0:00" }}</span>
+    <!-- Footer meta (filter on click) -->
+    <div class="flex items-center gap-1.5 mt-2 pt-3 border-t border-white/[0.06]">
+      <button type="button" class="card-filter font-label-mono text-[10px] leading-none px-2 py-1 rounded-full bg-white/[6%] border border-white/[8%] text-on-surface-variant hover:bg-white/[10%] hover:border-primary/30 hover:text-white transition-all" data-filter="model:{{ .Params.model | default "Unknown" }}">{{ .Params.model | default "Unknown" }}</button>
+      <button type="button" class="card-filter font-label-mono text-[10px] leading-none px-1.5 py-1 rounded-full bg-white/[4%] border border-white/[6%] text-on-surface-variant/70 hover:bg-white/[8%] hover:text-white transition-all" data-filter="language:{{ .Params.language | default "en" }}">{{ .Params.language | default "en" }}</button>
+      <span class="ml-auto font-label-mono text-[10px] leading-none text-on-surface-variant/40">{{ .Params.duration | default "0:00" }}</span>
     </div>
   </article>
 
-  <!-- Inline Detail Card -->
+  <!-- Inline Detail Card (popup) - Recipe title + Copy on same line -->
   <div class="detail-card">
     <div class="flex-grow">
-      <span class="text-xs text-on-surface-variant font-bold uppercase tracking-wider mb-2 block shrink-0">
-        Recipe
-      </span>
+      <div class="flex items-center justify-between gap-2 mb-2 shrink-0">
+        <span class="text-xs text-on-surface-variant font-bold uppercase tracking-wider shrink-0">Recipe</span>
+        <button class="copy-detail-btn text-[11px] font-medium text-primary hover:text-white flex items-center gap-1.5 transition-colors shrink-0" data-copy="{{ .Params.metadata.prompt_text | default "" }}" title="Copy prompt">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 256 256"><path d="M216,32H88a8,8,0,0,0-8,8V80H40a8,8,0,0,0-8,8V216a8,8,0,0,0,8,8H168a8,8,0,0,0,8-8V176h40a8,8,0,0,0,8-8V40A8,8,0,0,0,216,32Zm-8,160H48V96H208ZM208,80H96V48H208Z"/></svg>
+          Copy
+        </button>
+      </div>
       <p class="text-sm text-on-surface cursor-pointer hover:text-primary transition-colors mb-2 leading-relaxed prompt-text" title="Click to copy">
-        {{ $words := split (.Params.metadata.prompt_text | default "") " " }}
-        {{ range $i, $word := $words }}
-          <span style="animation-delay: {{ mul $i 0.05 }}s">{{ $word }}&nbsp;</span>
-        {{ end }}
+        {{- $words := split (.Params.metadata.prompt_text | default "") " " -}}
+        {{- range $i, $word := $words -}}
+          {{- if ne $word "" -}}<span style="animation-delay: {{ mul $i 0.05 }}s">{{ $word }}</span>{{- end -}}
+        {{- end -}}
       </p>
 
       <div class="mt-3 flex flex-col gap-2 shrink-0">
         <div class="flex flex-wrap gap-1">
           {{ range .Params.tags }}
-            <a href="{{ "/tags/" | relURL }}{{ . | urlize }}" class="tag font-label-mono text-[10px] bg-white/[7%] border border-white/[12%] text-gray-300 px-1.5 py-0.5 rounded hover:bg-white/[12%] hover:border-primary/40 hover:text-white transition-all">#{{ . }}</a>
+            <button type="button" class="card-filter tag font-label-mono text-[10px] bg-white/[7%] border border-white/[12%] text-gray-300 px-1.5 py-0.5 rounded hover:bg-white/[12%] hover:border-primary/40 hover:text-white transition-all" data-filter="tag:{{ . }}">#{{ . }}</button>
           {{ end }}
         </div>
         <div class="grid grid-cols-3 gap-2 mt-1">
           <div class="flex flex-col">
             <span class="text-[9px] text-on-surface-variant uppercase tracking-wider">Model</span>
-            <a href="{{ "/models/" | relURL }}{{ .Params.model | urlize }}" class="font-label-mono text-[11px] text-on-surface hover:text-primary transition-colors">{{ .Params.model | default "-" }}</a>
+            <button type="button" class="card-filter font-label-mono text-[11px] text-on-surface hover:text-primary transition-colors text-left" data-filter="model:{{ .Params.model | default "-" }}">{{ .Params.model | default "-" }}</button>
           </div>
           <div class="flex flex-col">
             <span class="text-[9px] text-on-surface-variant uppercase tracking-wider">Top P</span>

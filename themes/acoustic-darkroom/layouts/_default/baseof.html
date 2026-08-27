@@ -10,7 +10,9 @@
     <span class="bg-glow-blob blob-c"></span>
   </div>
   {{ block "main" . }}{{ end }}
+  {{ partial "contribute-button.html" . }}
   {{ partial "nav-island.html" . }}
+  {{ partial "help-drawer.html" . }}
   {{ partial "scripts.html" . }}
 </body>
 </html>

@@ -131,6 +131,31 @@
   }
 }
 
+@media (max-width: 768px) {
+  .bg-glow-blob {
+    opacity: 0.6;
+    filter: blur(70px);
+  }
+  .blob-a {
+    width: 60vw;
+    height: 60vw;
+    left: -18vw;
+    top: -12vh;
+  }
+  .blob-b {
+    width: 55vw;
+    height: 55vw;
+    left: 28vw;
+    top: 24vh;
+  }
+  .blob-c {
+    width: 58vw;
+    height: 58vw;
+    right: -16vw;
+    bottom: -8vh;
+  }
+}
+
 /* Keep page content below the ambient glow:
    NOTE: main must NOT create a stacking context (no position/z-index) or the
    active card + popup (z-40) would be trapped inside it, below .bg-glow (z-35). */
@@ -319,6 +344,20 @@ body::before {
   border-color: rgba(128, 128, 128, 0.3);
 }
 
+/* Line clamp utilities (Tailwind CDN doesn't include the plugin) */
+.line-clamp-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 /* Detail Card - inline expanding from card */
 .detail-card {
   position: absolute;
@@ -354,10 +393,14 @@ body::before {
   transform: scale(1.02);
 }
 
-/* Prompt text word animation */
+/* Prompt text word animation - gap via margin so --minify whitespace collapse doesn't join words */
 .prompt-text span {
   opacity: 0;
   display: inline-block;
+  margin-right: 0.28em;
+}
+.prompt-text span:last-child {
+  margin-right: 0;
 }
 .sample-card-container.active .prompt-text span {
   animation: typeIn 0.3s ease forwards;
@@ -403,6 +446,108 @@ body::before {
 }
 .selection\:text-black::selection {
   color: #000000;
+}
+
+/* Help card - bottom sheet (Chrome highlight style) */
+.help-drawer {
+  transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+  will-change: transform;
+}
+.help-drawer.is-open {
+  transform: translate(-50%, 0) !important;
+}
+.help-backdrop.is-open {
+  opacity: 1;
+}
+body.help-open {
+  overflow: hidden;
+}
+.help-handle {
+  display: flex;
+}
+#scroll-more-pill {
+  display: none;
+}
+@media (min-width: 1024px) {
+  #scroll-more-pill {
+    display: flex;
+  }
+}
+#scroll-more-pill.is-hidden {
+  display: none !important;
+}
+@media (max-width: 768px) {
+  .help-drawer {
+    bottom: 12px !important;
+    max-width: calc(100vw - 24px) !important;
+  }
+}
+
+/* Rainbow button */
+.rainbow-button {
+  --color-1: hsl(0 100% 63%);
+  --color-2: hsl(270 100% 63%);
+  --color-3: hsl(210 100% 63%);
+  --color-4: hsl(195 100% 63%);
+  --color-5: hsl(90 100% 63%);
+  --speed: 2s;
+  position: relative;
+  background-clip: padding-box, border-box, border-box;
+  background-origin: border-box;
+  border: calc(0.08 * 1rem) solid transparent;
+  background-size: 200%;
+  background-image: linear-gradient(#fff, #fff), linear-gradient(#fff 50%, rgba(255,255,255,0.6) 80%, rgba(0,0,0,0)), linear-gradient(90deg, var(--color-1), var(--color-5), var(--color-3), var(--color-4), var(--color-2));
+  animation: rainbow var(--speed) infinite linear;
+  color: #000;
+}
+.rainbow-button::before {
+  content: "";
+  position: absolute;
+  bottom: -20%;
+  left: 50%;
+  z-index: 0;
+  height: 20%;
+  width: 60%;
+  transform: translateX(-50%);
+  background: linear-gradient(90deg, var(--color-1), var(--color-5), var(--color-3), var(--color-4), var(--color-2));
+  background-size: 200%;
+  filter: blur(calc(0.8 * 1rem));
+  animation: rainbow var(--speed) infinite linear;
+  border-radius: inherit;
+  pointer-events: none;
+}
+@keyframes rainbow {
+  0% { background-position: 0; }
+  100% { background-position: 200%; }
+}
+
+/* Glowing effect for prompt cards - monochrome to match site theme */
+.glowing-card {
+  --blur: 0px;
+  --spread: 20;
+  --start: 0;
+  --active: 0;
+  --glowingeffect-border-width: 1px;
+  --repeating-conic-gradient-times: 5;
+  --gradient: radial-gradient(circle, #ffffff 10%, #ffffff00 20%), radial-gradient(circle at 40% 40%, #a0a0a0 5%, #a0a0a000 15%), radial-gradient(circle at 60% 60%, #808080 10%, #80808000 20%), radial-gradient(circle at 40% 60%, #555555 10%, #55555500 20%), repeating-conic-gradient(from 236.84deg at 50% 50%, #ffffff 0%, #a0a0a0 calc(25% / var(--repeating-conic-gradient-times)), #808080 calc(50% / var(--repeating-conic-gradient-times)), #505050 calc(75% / var(--repeating-conic-gradient-times)), #ffffff calc(100% / var(--repeating-conic-gradient-times)));
+}
+.glowing-card::after {
+  content: "";
+  position: absolute;
+  inset: calc(-1 * var(--glowingeffect-border-width));
+  border-radius: inherit;
+  border: var(--glowingeffect-border-width) solid transparent;
+  background: var(--gradient);
+  background-attachment: fixed;
+  opacity: var(--active);
+  transition: opacity 300ms;
+  -webkit-mask-clip: padding-box, border-box;
+  mask-clip: padding-box, border-box;
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+  -webkit-mask-image: linear-gradient(#0000, #0000), conic-gradient(from calc((var(--start) - var(--spread)) * 1deg), #00000000 0deg, #fff, #00000000 calc(var(--spread) * 2deg));
+  mask-image: linear-gradient(#0000, #0000), conic-gradient(from calc((var(--start) - var(--spread)) * 1deg), #00000000 0deg, #fff, #00000000 calc(var(--spread) * 2deg));
+  pointer-events: none;
 }
 
 /* Utility overrides */

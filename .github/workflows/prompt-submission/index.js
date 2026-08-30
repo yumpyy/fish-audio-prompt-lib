@@ -6,44 +6,8 @@ const http = require('http');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { execFileSync } = require('child_process');
 
 const AUDIO_EXTENSIONS = new Set(['.mp3', '.wav', '.ogg', '.m4a', '.aac', '.flac', '.opus', '.webm']);
-
-// Number of waveform peaks to precompute and embed in frontmatter
-const PEAK_COUNT = 120;
-
-// Compute normalized waveform peaks (ints 0..999) from an audio file via ffmpeg.
-// Returns null if ffmpeg is unavailable or decoding fails — site falls back to
-// in-browser fetch/decode in that case.
-function computePeaks(filePath) {
-  try {
-    const pcm = execFileSync(
-      'ffmpeg',
-      ['-v', 'error', '-i', filePath, '-f', 's16le', '-ac', '1', '-ar', '8000', '-'],
-      { maxBuffer: 256 * 1024 * 1024, timeout: 60000 }
-    );
-    const samples = new Int16Array(pcm.buffer, pcm.byteOffset, Math.floor(pcm.byteLength / 2));
-    const peaks = new Array(PEAK_COUNT).fill(0);
-    const spb = Math.max(1, Math.floor(samples.length / PEAK_COUNT));
-    for (let i = 0; i < PEAK_COUNT; i++) {
-      let max = 0;
-      const s = i * spb;
-      const e = Math.min(s + spb, samples.length);
-      for (let j = s; j < e; j++) {
-        const a = Math.abs(samples[j]);
-        if (a > max) max = a;
-      }
-      peaks[i] = Math.round((max / 32768) * 999);
-    }
-    const mx = Math.max(...peaks);
-    if (mx > 0) for (let i = 0; i < PEAK_COUNT; i++) peaks[i] = Math.round((peaks[i] / mx) * 999);
-    return peaks;
-  } catch (e) {
-    console.warn('Peak computation failed (site will fall back to client-side):', e.message);
-    return null;
-  }
-}
 
 const CONTENT_TYPES = {
   mp3: 'audio/mpeg',
@@ -365,10 +329,6 @@ async function main() {
 
   const audioUrl = `${publicUrl}/${key}`;
 
-  // Precompute waveform peaks from the downloaded file so the site never
-  // needs to fetch+decode the audio in the browser just to draw a waveform.
-  const peaks = computePeaks(tempFile);
-
   // All metadata fields are optional — N/A in UI when not defined, clamp when provided
   const frontMatter = {
     title,
@@ -388,7 +348,6 @@ async function main() {
       ...(isNaN(temperature) ? {} : { temperature }),
       ...(isNaN(topP) ? {} : { top_p: topP }),
       ...(isNaN(repetitionPenalty) ? {} : { repetition_penalty: repetitionPenalty }),
-      ...(peaks ? { peaks } : {}),
       nsfw,
       ...(voiceName ? { voice_name: voiceName } : {}),
       ...(voiceUrl ? { voice_url: voiceUrl } : {}),

@@ -1,13 +1,3 @@
-{{/* Waveform canvas. Input dict: audio (url), slug (optional), peaks (optional int array 0..999).
-     Precomputed peaks (frontmatter metadata.peaks or data/waveforms.json) render instantly
-     with zero network/decode cost; canvas falls back to in-browser fetch via data-audio. */}}
-{{ $peaksJson := "" }}
-{{ if .peaks }}
-  {{ $peaksJson = jsonify .peaks }}
-{{ else if and .slug site.Data.waveforms }}
-  {{ $pre := index site.Data.waveforms .slug }}
-  {{ if $pre }}{{ $peaksJson = jsonify $pre }}{{ end }}
-{{ end }}
 <div class="waveform-wrap w-full h-8 relative mt-2 mb-2 overflow-hidden shrink-0">
-  <canvas class="waveform-canvas w-full h-full" data-audio="{{ .audio }}"{{ with $peaksJson }} data-peaks="{{ . }}"{{ end }}></canvas>
+  <canvas class="waveform-canvas w-full h-full" data-audio="{{ .audio }}"></canvas>
 </div>

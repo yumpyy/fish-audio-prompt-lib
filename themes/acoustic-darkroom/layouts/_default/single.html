@@ -43,7 +43,14 @@
       </div>
     </div>
     <div class="w-full h-16 mt-2 mb-4 overflow-hidden rounded">
-      <canvas id="single-waveform" class="w-full h-full" data-audio="{{ $audio }}"></canvas>
+      {{ $peaksJson := "" }}
+      {{ if .Params.metadata.peaks }}
+        {{ $peaksJson = jsonify .Params.metadata.peaks }}
+      {{ else if site.Data.waveforms }}
+        {{ $pre := index site.Data.waveforms .File.BaseFileName }}
+        {{ if $pre }}{{ $peaksJson = jsonify $pre }}{{ end }}
+      {{ end }}
+      <canvas id="single-waveform" class="w-full h-full" data-audio="{{ $audio }}"{{ with $peaksJson }} data-peaks="{{ . }}"{{ end }}></canvas>
     </div>
     <audio id="audio-element" src="{{ $audio }}" preload="metadata" class="w-full"></audio>
   </div>

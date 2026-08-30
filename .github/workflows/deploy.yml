@@ -10,6 +10,8 @@ on:
       - 'static/**'
       - 'layouts/**'
       - 'assets/**'
+      - 'scripts/**'
+      - 'data/**'
   workflow_dispatch:
 permissions:
   contents: read
@@ -39,6 +41,9 @@ jobs:
           mkdir -p "${HOME}/.local/hugo"
           tar -C "${HOME}/.local/hugo" -xf "${{ runner.temp }}/hugo_extended_${HUGO_VERSION}_linux-amd64.tar.gz"
           echo "${HOME}/.local/hugo" >> "${GITHUB_PATH}"
+
+      - name: Precompute waveforms
+        run: node scripts/gen-waveforms.mjs
 
       - name: Build
         run: hugo --gc --minify --baseURL "${{ steps.pages.outputs.base_url }}/"

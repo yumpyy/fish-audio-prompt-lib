@@ -73,6 +73,19 @@
     var bars = Math.min(200, Math.max(30, Math.round(canvas.clientWidth / 2.5)));
     canvas._bars = bars;
 
+    // Fast path: peaks precomputed at build/submit time (data-peaks = ints 0..999)
+    var pre = canvas.dataset.peaks;
+    if (pre) {
+      try {
+        var arr = JSON.parse(pre);
+        var peaks = new Float32Array(arr.length);
+        for (var i = 0; i < arr.length; i++) peaks[i] = arr[i] / 999;
+        canvas._peaks = peaks;
+        draw(canvas, peaks, 0);
+        return;
+      } catch (e) { /* malformed — fall through to fetch */ }
+    }
+
     fetchPeaks(url, bars).then(function(peaks) {
       if (peaks) {
         canvas._peaks = peaks;

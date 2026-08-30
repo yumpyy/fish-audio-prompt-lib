@@ -1,0 +1,7 @@
+{{/* Renders prompt text with [emotion] tags highlighted.
+     Input: raw prompt_text string. Escapes HTML first (community submissions),
+     then wraps [ ... ] groups in .prompt-emotion spans. Newlines preserved
+     by the parent's whitespace-pre-wrap. */}}
+{{- $text := . | default "" | htmlEscape -}}
+{{- $highlighted := replaceRE `\[([^\]\r\n]+)\]` `<span class="prompt-emotion">[$1]</span>` $text -}}
+{{- $highlighted | safeHTML -}}

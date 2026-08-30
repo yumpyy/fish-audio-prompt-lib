@@ -144,7 +144,7 @@
           </button>
         </div>
         <div class="prompt-scroll w-full flex-1 overflow-y-auto overflow-x-hidden rounded-md border border-white/[6%] bg-black/20 p-2.5 scrollbar-thin">
-          <p class="text-sm text-on-surface cursor-pointer hover:text-primary transition-colors leading-relaxed prompt-text break-words whitespace-pre-wrap" title="Click to copy">{{ .Params.metadata.prompt_text | default "" }}</p>
+          <p class="text-sm text-on-surface cursor-pointer hover:text-primary transition-colors leading-relaxed prompt-text break-words whitespace-pre-wrap" title="Click to copy">{{ partial "prompt-text.html" (.Params.metadata.prompt_text | default "") }}</p>
         </div>
         <!-- Tags at bottom of prompt section -->
         <div class="mt-2 pt-2 border-t border-white/[0.06] flex flex-wrap gap-1">

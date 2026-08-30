@@ -543,6 +543,19 @@ body::before {
   overflow-wrap: anywhere;
 }
 
+/* [emotion] tags inside prompt text — [calm], [curious], [amused] … */
+.prompt-emotion {
+  font-size: 0.85em;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--color-tertiary);
+  background: rgba(255, 209, 170, 0.07);
+  border: 1px solid rgba(255, 209, 170, 0.16);
+  border-radius: 4px;
+  padding: 0 4px;
+  margin: 0 1px;
+}
+
 /* Playing state */
 .playing .original-card {
   border-color: var(--color-primary);

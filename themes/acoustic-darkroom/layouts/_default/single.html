@@ -58,7 +58,7 @@
       </button>
     </div>
     <div class="w-full h-[160px] max-h-[160px] overflow-y-auto overflow-x-hidden rounded-lg border border-white/[6%] bg-black/30 p-4 scrollbar-thin prompt-scroll">
-      <p id="prompt-text" class="text-body-md text-on-surface leading-relaxed break-words whitespace-pre-wrap">{{ .Params.metadata.prompt_text }}</p>
+      <p id="prompt-text" class="text-body-md text-on-surface leading-relaxed break-words whitespace-pre-wrap">{{ partial "prompt-text.html" .Params.metadata.prompt_text }}</p>
     </div>
   </div>
 

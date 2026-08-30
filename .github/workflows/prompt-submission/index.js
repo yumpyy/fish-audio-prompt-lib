@@ -27,13 +27,36 @@ const LABEL_TO_FIELD = {
   'Language': 'language',
   'Tags': 'tags',
   'Prompt text': 'prompt_text',
-  'Top P (optional)': 'top_p',
+  'Speed (optional)': 'speed',
+  'Volume (optional)': 'volume',
   'Temperature (optional)': 'temperature',
+  'Top P (optional)': 'top_p',
+  'Repetition penalty (optional)': 'repetition_penalty',
   'NSFW (optional)': 'nsfw',
+  'Voice name (optional)': 'voice_name',
+  'Voice link (optional)': 'voice_url',
   'Notes / description (optional)': 'description',
   'Your name or handle': 'contributor',
   'License / consent': 'consent',
 };
+
+const ALLOWED_MODELS = new Set(['s2.1-pro', 's2-pro', 's1', 'drama-3']);
+
+// Normalize model input to allowed set (handles legacy "S2.1 Pro", case, spaces)
+function normalizeModel(raw) {
+  if (!raw) return raw;
+  let m = raw.trim().toLowerCase().replace(/\s+/g, '-').replace(/_/g, '-');
+  // legacy mappings
+  if (m === 's2.1-pro' || m === 's2.1' || m === 's2.1pro') return 's2.1-pro';
+  if (m === 's2-pro' || m === 's2' || m === 's2.0' || m === 's2.0-pro') return 's2-pro';
+  if (m === 's1' || m === 's1.0' || m === 's1.1') return 's1';
+  if (m === 'drama-3' || m === 'drama3' || m === 'drama') return 'drama-3';
+  return m;
+}
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
 
 const REQUIRED_FIELDS = ['title', 'model', 'language', 'tags', 'prompt_text', 'contributor'];
 
@@ -246,7 +269,11 @@ async function main() {
   }
 
   const title = form.title.trim();
-  const model = form.model.trim();
+  const rawModel = form.model.trim();
+  const model = normalizeModel(rawModel);
+  if (!ALLOWED_MODELS.has(model)) {
+    throw new Error(`Invalid model "${rawModel}" (normalized to "${model}"). Allowed: ${Array.from(ALLOWED_MODELS).join(', ')}`);
+  }
   const language = form.language.trim();
   const tags = String(form.tags)
     .split(',')
@@ -255,9 +282,14 @@ async function main() {
   const promptText = form.prompt_text.trim();
   const description = form.description ? form.description.trim() : '';
   const contributor = form.contributor.trim();
+  const voiceName = form.voice_name ? form.voice_name.trim() : '';
+  const voiceUrl = form.voice_url ? form.voice_url.trim() : '';
 
   const topP = parseFloat(form.top_p);
   const temperature = parseFloat(form.temperature);
+  const speed = parseFloat(form.speed);
+  const volume = parseFloat(form.volume);
+  const repetitionPenalty = parseFloat(form.repetition_penalty);
   const nsfw = form.nsfw === 'Yes';
 
   const attachment = attachments[0];
@@ -293,6 +325,7 @@ async function main() {
 
   const audioUrl = `${publicUrl}/${key}`;
 
+  // All metadata fields are optional — N/A in UI when not defined, clamp when provided
   const frontMatter = {
     title,
     date: new Date().toISOString(),
@@ -302,11 +335,18 @@ async function main() {
     tags,
     contributor,
     source_issue: issueNumber,
+    ...(voiceName ? { voice_name: voiceName } : {}),
+    ...(voiceUrl ? { voice_url: voiceUrl } : {}),
     metadata: {
       prompt_text: promptText,
-      top_p: isNaN(topP) ? 0.95 : topP,
-      temperature: isNaN(temperature) ? 0.8 : temperature,
+      ...(isNaN(speed) ? {} : { speed: clamp(speed, 0.7, 1.3) }),
+      ...(isNaN(volume) ? {} : { volume: clamp(volume, -5, 5) }),
+      ...(isNaN(temperature) ? {} : { temperature }),
+      ...(isNaN(topP) ? {} : { top_p: topP }),
+      ...(isNaN(repetitionPenalty) ? {} : { repetition_penalty: repetitionPenalty }),
       nsfw,
+      ...(voiceName ? { voice_name: voiceName } : {}),
+      ...(voiceUrl ? { voice_url: voiceUrl } : {}),
     },
   };
   const bodyText = description !== '' ? description : `Contributed via #${issueNumber}.`;

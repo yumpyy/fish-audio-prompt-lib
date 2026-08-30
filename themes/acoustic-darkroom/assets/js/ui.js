@@ -1,9 +1,9 @@
 /**
- * ui.js - Card click interactions with inline detail card expansion
- * Exact replica of the reference interaction model:
+ * ui.js - Card click interactions with popup detail
  * - Click card body -> toggle .active on .sample-card-container + body.dimmed
- * - Click play button -> plays audio, does NOT toggle detail
- * - Click close button or outside -> close all active cards
+ * - Popup is absolute inside container, positioned left/right/below to avoid edge clipping
+ * - Landscape: left rail 168px + recipe remaining width
+ * - Tags at bottom of prompt section (right column)
  */
 
 (function() {
@@ -11,8 +11,59 @@
 
   const body = document.body;
 
+  function positionDetail(container) {
+    const detail = container.querySelector('.detail-card');
+    if (!detail) return;
+    const vw = window.innerWidth;
+    // Mobile: always below
+    if (vw < 768) {
+      detail.classList.remove('pos-left', 'pos-right');
+      detail.classList.add('pos-below');
+      return;
+    }
+    const rect = container.getBoundingClientRect();
+    const popupW = 520;
+    const gap = 16;
+    const spaceRight = vw - rect.right;
+    const spaceLeft = rect.left;
+    // If not enough space on right and more space on left, show on left
+    if (spaceRight < popupW + gap && spaceLeft > spaceRight) {
+      detail.classList.remove('pos-right', 'pos-below');
+      detail.classList.add('pos-left');
+    } else if (spaceRight >= popupW + gap) {
+      detail.classList.remove('pos-left', 'pos-below');
+      detail.classList.add('pos-right');
+    } else if (spaceLeft >= popupW + gap) {
+      detail.classList.remove('pos-right', 'pos-below');
+      detail.classList.add('pos-left');
+    } else {
+      // fallback below if neither side fits (very narrow viewport)
+      detail.classList.remove('pos-left', 'pos-right');
+      detail.classList.add('pos-below');
+    }
+  }
+
+  function closeAllCards() {
+    document.querySelectorAll('.sample-card-container.active').forEach(c => {
+      c.classList.remove('active');
+      const detail = c.querySelector('.detail-card');
+      if (detail) {
+        detail.classList.remove('pos-left', 'pos-right', 'pos-below');
+      }
+      const spans = c.querySelectorAll('.prompt-text span');
+      spans.forEach(span => {
+        span.style.animationName = 'none';
+        setTimeout(() => span.style.animationName = '', 50);
+      });
+    });
+    body.classList.remove('dimmed');
+  }
+
   function init() {
     const containers = document.querySelectorAll('.sample-card-container');
+
+    // ensure all prompt windows start at top (not last section)
+    document.querySelectorAll('.prompt-scroll').forEach(el => { el.scrollTop = 0; });
 
     containers.forEach(container => {
       const originalCard = container.querySelector('.original-card');
@@ -26,8 +77,31 @@
           const isActive = container.classList.contains('active');
           closeAllCards();
           if (!isActive) {
+            positionDetail(container);
             container.classList.add('active');
             body.classList.add('dimmed');
+            // ensure prompt starts at top (not last section)
+            if (detailCard) {
+              const scroller = detailCard.querySelector('.prompt-scroll');
+              if (scroller) scroller.scrollTop = 0;
+              // also reset any inner prompt text scroll
+              const promptText = detailCard.querySelector('.prompt-text');
+              if (promptText) promptText.scrollTop = 0;
+              void detailCard.offsetWidth;
+            }
+            // if detail would be offscreen vertically, scroll into view
+            requestAnimationFrame(() => {
+              if (detailCard) {
+                const scroller = detailCard.querySelector('.prompt-scroll');
+                if (scroller) scroller.scrollTop = 0;
+                const rect = detailCard.getBoundingClientRect();
+                if (rect.bottom > window.innerHeight - 16 || rect.top < 0) {
+                  // for side popup, scroll container into view; for below, scroll detail
+                  const target = rect.bottom > window.innerHeight ? detailCard : container;
+                  target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+              }
+            });
           }
         });
       }
@@ -46,34 +120,25 @@
         });
       }
 
-      // Click to copy prompt text (legacy word-span popup)
-      const promptText = container.querySelector('.prompt-text');
+      // Click to copy prompt text (inside detail)
+      const promptText = container.querySelector('.detail-card .prompt-text');
       if (promptText) {
         promptText.addEventListener('click', (e) => {
           e.stopPropagation();
           navigator.clipboard.writeText(promptText.textContent.trim());
-          showCopiedToast(e.target);
+          showCopiedToast(e.target.closest('span') || promptText);
         });
       }
-      // New popup: full prompt block + Copy button
-      const fullPrompt = container.querySelector('.prompt-full-text');
-      if (fullPrompt) {
-        fullPrompt.addEventListener('click', (e) => {
+      const copyBtns = container.querySelectorAll('.copy-detail-btn');
+      copyBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
           e.stopPropagation();
-          navigator.clipboard.writeText(fullPrompt.textContent.trim());
-          showCopiedToast(fullPrompt);
-        });
-      }
-      const copyBtn = container.querySelector('.copy-detail-btn');
-      if (copyBtn) {
-        copyBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const text = copyBtn.dataset.copy || (fullPrompt ? fullPrompt.textContent.trim() : '');
+          const text = btn.dataset.copy || (container.querySelector('.detail-card .prompt-text') ? container.querySelector('.detail-card .prompt-text').textContent.trim() : '');
           if (!text) return;
           navigator.clipboard.writeText(text);
-          showCopiedToast(copyBtn);
+          showCopiedToast(btn);
         });
-      }
+      });
     });
 
     // Help drawer
@@ -96,12 +161,10 @@
       helpDrawer.classList.add('is-open');
       helpDrawer.setAttribute('aria-hidden', 'false');
       helpBackdrop.classList.remove('hidden');
-      // force reflow before opacity transition
       void helpBackdrop.offsetWidth;
       helpBackdrop.classList.add('is-open');
       body.classList.add('help-open');
       if (closeHelpBtn) closeHelpBtn.focus();
-      // show floating scroll hint (laptop only via CSS)
       if (scrollMorePill) scrollMorePill.classList.remove('is-hidden');
     }
     function closeHelp() {
@@ -117,11 +180,14 @@
     if (closeHelpBtn) closeHelpBtn.addEventListener('click', (e) => { e.stopPropagation(); closeHelp(); });
     if (helpBackdrop) helpBackdrop.addEventListener('click', closeHelp);
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && helpDrawer && helpDrawer.classList.contains('is-open')) {
-        closeHelp();
+      if (e.key === 'Escape') {
+        if (helpDrawer && helpDrawer.classList.contains('is-open')) {
+          closeHelp();
+        } else if (document.querySelector('.sample-card-container.active')) {
+          closeAllCards();
+        }
       }
     });
-    // Scroll hint: floating circle, disappears on any click or scroll
     document.addEventListener('click', (e) => {
       if (!helpDrawer || !helpDrawer.classList.contains('is-open')) return;
       if (!scrollMorePill || scrollMorePill.classList.contains('is-hidden')) return;
@@ -139,25 +205,35 @@
       });
     }
 
-    // Click outside closes
+    // Click outside closes detail
     document.addEventListener('click', (e) => {
       if (body.classList.contains('dimmed')) {
+        if (e.target.closest('.detail-card') || e.target.closest('.sample-card-container.active')) return;
         closeAllCards();
       }
     });
-  }
 
-  function closeAllCards() {
-    document.querySelectorAll('.sample-card-container.active').forEach(c => {
-      c.classList.remove('active');
-      // Reset prompt animation spans
-      const spans = c.querySelectorAll('.prompt-text span');
-      spans.forEach(span => {
-        span.style.animationName = 'none';
-        setTimeout(() => span.style.animationName = '', 50);
-      });
+    // Re-position on resize (if open)
+    let resizeTimer = null;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        const active = document.querySelector('.sample-card-container.active');
+        if (active) positionDetail(active);
+      }, 100);
     });
-    body.classList.remove('dimmed');
+
+    // When search filters hide/show cards, close detail if source hidden
+    const grid = document.getElementById('grid-container');
+    if (grid) {
+      const observer = new MutationObserver(() => {
+        const active = document.querySelector('.sample-card-container.active');
+        if (active && (active.style.display === 'none' || active.offsetParent === null)) {
+          closeAllCards();
+        }
+      });
+      observer.observe(grid, { attributes: true, subtree: true, attributeFilter: ['style', 'class'] });
+    }
   }
 
   function showCopiedToast(anchor) {
@@ -181,6 +257,7 @@
   }
 
   window.showCopiedToast = showCopiedToast;
+  window.closeAllCards = closeAllCards;
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);

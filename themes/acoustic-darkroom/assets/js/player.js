@@ -245,24 +245,61 @@
 (function() {
   document.querySelectorAll('.sample-card-container[data-audio]').forEach(function(card) {
     var src = card.dataset.audio;
-    if (!src || card.dataset.duration) return;
+    if (!src) return;
+    // Always probe to ensure duration is correct; if already set from frontmatter keep it as fallback until loaded
     var p = new Audio();
     p.preload = 'metadata';
     p.addEventListener('loadedmetadata', function() {
       if (!p.duration || !isFinite(p.duration)) return;
       var m = Math.floor(p.duration / 60);
       var s = Math.floor(p.duration % 60);
-      card.dataset.duration = m + ':' + (s < 10 ? '0' : '') + s;
+      var dur = m + ':' + (s < 10 ? '0' : '') + s;
+      card.dataset.duration = dur;
       var el = card.querySelector('.duration-display');
-      if (el) el.textContent = card.dataset.duration;
+      if (el) el.textContent = dur;
     });
     p.addEventListener('error', function() {
-      delete card.dataset.duration;
-      var el = card.querySelector('.duration-display');
-      if (el) el.textContent = '\u2014';
+      // keep existing frontmatter duration if any, else show em dash
+      if (!card.dataset.duration) {
+        var el = card.querySelector('.duration-display');
+        if (el) el.textContent = '\u2014';
+      }
     });
     p.src = src;
   });
+
+  // Single page duration
+  var singleAudio = document.getElementById('audio-element');
+  var singleDurEl = document.getElementById('single-duration');
+  if (singleAudio && singleDurEl) {
+    var srcForSingle = singleAudio.getAttribute('src') || singleAudio.currentSrc;
+    function setSingleDur(d) {
+      if (!d || !isFinite(d)) return;
+      var m = Math.floor(d / 60);
+      var s = Math.floor(d % 60);
+      singleDurEl.textContent = m + ':' + (s < 10 ? '0' : '') + s;
+    }
+    if (singleAudio.duration && isFinite(singleAudio.duration) && singleAudio.duration > 0) {
+      setSingleDur(singleAudio.duration);
+    } else {
+      singleAudio.addEventListener('loadedmetadata', function() {
+        setSingleDur(singleAudio.duration);
+      });
+      // Fallback probe via separate Audio object (helps when preload=metadata not fired)
+      if (singleAudio.src) {
+        var probe = new Audio();
+        probe.preload = 'metadata';
+        probe.addEventListener('loadedmetadata', function() { setSingleDur(probe.duration); });
+        probe.addEventListener('error', function() {
+          if (singleDurEl.textContent === '0:00') singleDurEl.textContent = '\u2014';
+        });
+        probe.src = singleAudio.src;
+      }
+      singleAudio.addEventListener('error', function() {
+        if (singleDurEl.textContent === '0:00') singleDurEl.textContent = '\u2014';
+      });
+    }
+  }
 })();
 
 function copyPrompt() {

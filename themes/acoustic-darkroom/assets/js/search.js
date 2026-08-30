@@ -1,7 +1,7 @@
 /**
  * Search.js - FlexSearch integration for Fish Audio Prompt Library
  * Handles indexing, search, filtering, and result rendering
- * Supports prefix filters: #tag, @model, lang:name/code
+ * Supports prefix filters: #tag, @model, lang:name/code, voice:name (alias v:)
  */
 
 (function() {
@@ -48,6 +48,7 @@
   let allTags = [];
   let allModels = [];
   let allLangs = [];
+  let allVoices = [];
 
   // Initialize from server-rendered cards (no JSON needed!)
   function init() {
@@ -59,6 +60,7 @@
       title: card.dataset.title || '',
       model: card.dataset.model || '',
       language: card.dataset.language || '',
+      voice: card.dataset.voice || '',
       tags: (card.dataset.tags || '').split(',').filter(Boolean),
       nsfw: card.dataset.nsfw === 'true',
       prompt: card.dataset.prompt || '',
@@ -72,17 +74,20 @@
     const tagSet = new Set();
     const modelSet = new Set();
     const langSet = new Set();
+    const voiceSet = new Set();
     allPrompts.forEach(p => {
       p.tags.forEach(t => tagSet.add(t.trim()).add(t.trim().toLowerCase()));
       // store original case for display but also lower for matching
       if (p.model) modelSet.add(p.model);
       if (p.language) langSet.add(p.language);
+      if (p.voice) voiceSet.add(p.voice.trim());
     });
     // Normalize tags to unique lower-case display (keep original lower)
     allTags = Array.from(new Set(Array.from(tagSet).map(t => t.toLowerCase()).filter(Boolean))).sort();
     // Models keep original case
     allModels = Array.from(modelSet).sort();
     allLangs = Array.from(langSet).sort();
+    allVoices = Array.from(voiceSet).filter(Boolean).sort();
 
     buildIndex();
     bindEvents();
@@ -101,7 +106,7 @@
     });
 
     allPrompts.forEach((p, i) => {
-      const text = [p.title, p.prompt, p.tags.join(' ')].join(' ');
+      const text = [p.title, p.prompt, p.tags.join(' '), p.voice].join(' ');
       index.add(i, text);
     });
   }
@@ -305,6 +310,14 @@
         // Verify code exists in known langs or map
         toggleFilter(`language:${code}`);
         applied = true;
+      } else if ((m = tok.match(/^(?:voice|v):(.+)/i))) {
+        const val = m[1].trim();
+        if (val) {
+          const match = allVoices.find(v => v.toLowerCase() === val.toLowerCase()) || allVoices.find(v => v.toLowerCase().includes(val.toLowerCase()));
+          const voiceVal = match || val;
+          toggleFilter(`voice:${voiceVal}`);
+          applied = true;
+        }
       } else {
         leftover.push(tok);
       }
@@ -342,6 +355,12 @@
       const match = allModels.find(m => m.toLowerCase() === term) || allModels.find(m => m.toLowerCase().includes(term));
       if (match) return `model:${match}`;
       return `model:${term}`;
+    } else if (lower.startsWith('voice:') || lower.startsWith('v:')) {
+      const term = lower.replace(/^(?:voice|v):/, '').trim();
+      if (!term) return null;
+      const match = allVoices.find(v => v.toLowerCase() === term) || allVoices.find(v => v.toLowerCase().includes(term));
+      if (match) return `voice:${match}`;
+      return `voice:${term}`;
     } else if (lower.startsWith('lang:') || lower.startsWith('language:')) {
       const term = lower.replace(/^lang(?:uage)?:/, '').trim();
       if (!term) return null;
@@ -366,7 +385,7 @@
     const tokens = trimmed.split(/\s+/);
     if (tokens.length === 0) return false;
     const last = tokens[tokens.length - 1];
-    if (!/^(#|@|tag:|model:|lang(?:uage)?:)/i.test(last)) return false;
+    if (!/^(#|@|tag:|model:|voice:|v:|lang(?:uage)?:)/i.test(last)) return false;
     const filter = findFilterForToken(last);
     if (!filter) return false;
     toggleFilter(filter);
@@ -437,6 +456,7 @@
         let label = value;
         if (key === 'tag') label = `#${value}`;
         else if (key === 'nsfw') label = '18+';
+        else if (key === 'voice') label = `Voice: ${value}`;
         else if (key === 'language') label = LANG_NAMES[value] ? `${LANG_NAMES[value]} (${value})` : value;
         pills.push(`
           <button type="button" data-remove-filter="${escapeHtml(filterStr)}" class="group flex items-center gap-1.5 pl-3 pr-1.5 py-1 rounded-full bg-white/[12%] border border-white/[14%] text-white text-[11px] font-medium hover:bg-white/[16%] hover:border-white/[22%] transition-all">
@@ -504,6 +524,22 @@
           }
         });
       }
+    } else if (qLower.startsWith('voice:') || qLower.startsWith('v:')) {
+      const term = qLower.replace(/^(?:voice|v):/, '').trim();
+      if (term) {
+        allVoices.forEach(voice => {
+          if (voice.toLowerCase().includes(term.toLowerCase()) && !activeFilters.get('voice')?.has(voice)) {
+            suggestions.push({ label: voice, filter: `voice:${voice}`, type: 'voice' });
+          }
+        });
+      } else {
+        // show all voices when just "voice:" typed
+        allVoices.forEach(voice => {
+          if (!activeFilters.get('voice')?.has(voice)) {
+            suggestions.push({ label: voice, filter: `voice:${voice}`, type: 'voice' });
+          }
+        });
+      }
     } else if (qLower.startsWith('lang:') || qLower.startsWith('language:')) {
       const term = qLower.replace(/^lang:|^language:/, '').trim();
       if (term) {
@@ -525,7 +561,7 @@
         });
       }
     } else {
-      // Generic: match tags and models that contain the query substring
+      // Generic: match tags, models and voices that contain the query substring
       // Language suggestions require explicit lang: prefix to avoid noisy short queries like "hi"
       const generic = qLower;
       if (generic.length >= 2) {
@@ -539,6 +575,12 @@
         allModels.forEach(mod => {
           if (mod.toLowerCase().includes(generic) && !activeFilters.get('model')?.has(mod)) {
             suggestions.push({ label: mod, filter: `model:${mod}`, type: 'model' });
+          }
+        });
+        // Voices
+        allVoices.forEach(voice => {
+          if (voice.toLowerCase().includes(generic) && !activeFilters.get('voice')?.has(voice)) {
+            suggestions.push({ label: voice, filter: `voice:${voice}`, type: 'voice' });
           }
         });
       }
@@ -562,6 +604,7 @@
       let prefix = '';
       if (s.type === 'tag') prefix = 'Tag';
       else if (s.type === 'model') prefix = 'Model';
+      else if (s.type === 'voice') prefix = 'Voice';
       else if (s.type === 'lang') prefix = 'Language';
       return `
         <button type="button" data-suggestion-filter="${escapeHtml(s.filter)}" class="flex items-center gap-1.5 pl-2.5 pr-2.5 py-1 rounded-full bg-white/[6%] border border-white/[10%] text-on-surface-variant text-[11px] hover:bg-white/[10%] hover:border-white/[14%] hover:text-white transition-all">
@@ -583,18 +626,19 @@
   function getVisibleIds() {
     const queryElVal = searchInput ? searchInput.value.trim().toLowerCase() : '';
     // For text search, strip prefix tokens so they don't affect text search
-    // Remove #tag, @model, lang:xx patterns from query for text filtering
+    // Remove #tag, @model, lang:xx, voice:xx patterns from query for text filtering
     let query = queryElVal
       .replace(/#[^\s]+/g, '')
       .replace(/@[^\s]+(?:\s+[^\s]+)?/g, '')
       .replace(/tag:[^\s]+/gi, '')
       .replace(/model:[^\s]+(?:\s+[^\s]+)?/gi, '')
+      .replace(/(?:voice|v):[^\s]+(?:\s+[^\s]+){0,3}/gi, '')
       .replace(/lang(?:uage)?:[^\s]+/gi, '')
       .trim();
 
     let ids = new Set(allPrompts.map((_, i) => i));
 
-    // Text search on remaining query
+    // Text search on remaining query (also match voice so typing voice name without prefix finds it)
     if (query && index) {
       const results = index.search(query);
       ids = new Set(results);
@@ -602,6 +646,7 @@
       ids = new Set(allPrompts.filter(p =>
         p.title.toLowerCase().includes(query) ||
         p.prompt.toLowerCase().includes(query) ||
+        p.voice.toLowerCase().includes(query) ||
         p.tags.some(t => t.toLowerCase().includes(query))
       ).map((_, i) => i).filter(i => ids.has(i)));
     }
@@ -613,6 +658,14 @@
         if (key === 'tag') return p.tags.some(t => values.has(t) || values.has(t.toLowerCase()));
         if (key === 'model') return values.has(p.model);
         if (key === 'language') return values.has(p.language);
+        if (key === 'voice') {
+          // voice filter: exact match or substring (case-insensitive)
+          const pv = (p.voice || '').toLowerCase();
+          for (const v of values) {
+            if (pv === v.toLowerCase() || pv.includes(v.toLowerCase())) return true;
+          }
+          return false;
+        }
         if (key === 'nsfw') return p.nsfw;
         return false;
       }));

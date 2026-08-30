@@ -5,6 +5,8 @@
 {{ with .File }}{{ $id = .UniqueID }}{{ end }}
 {{ $tags := "" }}
 {{ with .Params.tags }}{{ $tags = delimit . "," }}{{ end }}
+{{ $voiceName := or .Params.voice_name .Params.metadata.voice_name }}
+{{ $voiceUrl := or .Params.voice_url .Params.metadata.voice_url .Params.voice_link .Params.metadata.voice_link }}
 
 {{/* Audio: prefer remote audio_url, else frontmatter, else default to <filename>.mp3 */}}
 {{ $audio := .Params.audio_url }}
@@ -22,6 +24,7 @@
   data-model="{{ .Params.model | default "" }}"
   data-language="{{ .Params.language | default "" }}"
   data-tags="{{ $tags }}"
+  data-voice="{{ $voiceName | default "" }}"
   data-nsfw="{{ .Params.metadata.nsfw | default false }}"
   data-prompt="{{ .Params.metadata.prompt_text | default "" }}"
   data-duration="{{ .Params.duration | default "" }}"
@@ -64,58 +67,92 @@
       </div>
     </div>
 
-    <!-- Footer meta (filter on click) -->
+    <!-- Footer meta: model + language + voice (voice capsule alongside model/lang) -->
     <div class="flex items-center gap-1.5 mt-2 pt-3 border-t border-white/[0.06]">
       <button type="button" class="card-filter font-label-mono text-[10px] leading-none px-2 py-1 rounded-full bg-white/[6%] border border-white/[8%] text-on-surface-variant hover:bg-white/[10%] hover:border-primary/30 hover:text-white transition-all" data-filter="model:{{ .Params.model | default "Unknown" }}">{{ .Params.model | default "Unknown" }}</button>
       <button type="button" class="card-filter font-label-mono text-[10px] leading-none px-1.5 py-1 rounded-full bg-white/[4%] border border-white/[6%] text-on-surface-variant/70 hover:bg-white/[8%] hover:text-white transition-all" data-filter="language:{{ .Params.language | default "en" }}">{{ .Params.language | default "en" }}</button>
-      <span class="ml-auto font-label-mono text-[10px] leading-none text-on-surface-variant/40">{{ .Params.duration | default "0:00" }}</span>
+      {{ if $voiceName }}
+        <button type="button" class="card-filter font-label-mono text-[10px] leading-none px-2 py-1 rounded-full bg-white/[6%] border border-white/[8%] text-on-surface-variant hover:bg-white/[10%] hover:border-primary/30 hover:text-white transition-all truncate max-w-[110px]" data-filter="voice:{{ $voiceName }}" title="Filter by voice: {{ $voiceName }}">{{ $voiceName }}</button>
+      {{ else if $voiceUrl }}
+        <a href="{{ $voiceUrl }}" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="font-label-mono text-[10px] leading-none px-2 py-1 rounded-full bg-white/[6%] border border-white/[8%] text-on-surface-variant hover:bg-white/[10%] hover:border-primary/30 hover:text-white transition-all truncate max-w-[110px]" title="{{ $voiceUrl }}">Voice</a>
+      {{ end }}
+      <span class="ml-auto font-label-mono text-[10px] leading-none text-on-surface-variant/40 duration-display">{{ .Params.duration | default "0:00" }}</span>
     </div>
   </article>
 
-  <!-- Inline Detail Card (popup) - Recipe title + Copy on same line -->
+  <!-- Detail popup — landscape, appears on left when card is on right edge -->
   <div class="detail-card">
-    <div class="flex-grow">
-      <div class="flex items-center justify-between gap-2 mb-2 shrink-0">
-        <span class="text-xs text-on-surface-variant font-bold uppercase tracking-wider shrink-0">Recipe</span>
-        <button class="copy-detail-btn text-[11px] font-medium text-primary hover:text-white flex items-center gap-1.5 transition-colors shrink-0" data-copy="{{ .Params.metadata.prompt_text | default "" }}" title="Copy prompt">
-          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 256 256"><path d="M216,32H88a8,8,0,0,0-8,8V80H40a8,8,0,0,0-8,8V216a8,8,0,0,0,8,8H168a8,8,0,0,0,8-8V176h40a8,8,0,0,0,8-8V40A8,8,0,0,0,216,32Zm-8,160H48V96H208ZM208,80H96V48H208Z"/></svg>
-          Copy
-        </button>
-      </div>
-      <p class="text-sm text-on-surface cursor-pointer hover:text-primary transition-colors mb-2 leading-relaxed prompt-text" title="Click to copy">
-        {{- $words := split (.Params.metadata.prompt_text | default "") " " -}}
-        {{- range $i, $word := $words -}}
-          {{- if ne $word "" -}}<span style="animation-delay: {{ mul $i 0.05 }}s">{{ $word }}</span>{{- end -}}
-        {{- end -}}
-      </p>
-
-      <div class="mt-3 flex flex-col gap-2 shrink-0">
-        <div class="flex flex-wrap gap-1">
-          {{ range .Params.tags }}
-            <button type="button" class="card-filter tag font-label-mono text-[10px] bg-white/[7%] border border-white/[12%] text-gray-300 px-1.5 py-0.5 rounded hover:bg-white/[12%] hover:border-primary/40 hover:text-white transition-all" data-filter="tag:{{ . }}">#{{ . }}</button>
-          {{ end }}
-        </div>
-        <div class="grid grid-cols-3 gap-2 mt-1">
+    <div class="detail-inner">
+      <!-- LEFT RAIL: metadata — fixed 168px -->
+      <div class="detail-meta">
+        <div class="grid grid-cols-3 gap-2">
           <div class="flex flex-col">
             <span class="text-[9px] text-on-surface-variant uppercase tracking-wider">Model</span>
             <button type="button" class="card-filter font-label-mono text-[11px] text-on-surface hover:text-primary transition-colors text-left" data-filter="model:{{ .Params.model | default "-" }}">{{ .Params.model | default "-" }}</button>
           </div>
           <div class="flex flex-col">
+            <span class="text-[9px] text-on-surface-variant uppercase tracking-wider">Speed</span>
+            {{ if isset .Params.metadata "speed" }}<span class="font-label-mono text-[11px] text-on-surface">{{ .Params.metadata.speed }}</span>{{ else }}<span class="font-label-mono text-[11px] text-on-surface-variant/40">N/A</span>{{ end }}
+          </div>
+          <div class="flex flex-col">
+            <span class="text-[9px] text-on-surface-variant uppercase tracking-wider">Volume</span>
+            {{ if isset .Params.metadata "volume" }}<span class="font-label-mono text-[11px] text-on-surface">{{ .Params.metadata.volume }}</span>{{ else }}<span class="font-label-mono text-[11px] text-on-surface-variant/40">N/A</span>{{ end }}
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-2">
+          <div class="flex flex-col">
             <span class="text-[9px] text-on-surface-variant uppercase tracking-wider">Top P</span>
-            <span class="font-label-mono text-[11px] text-on-surface">{{ .Params.metadata.top_p | default "0.95" }}</span>
+            {{ if isset .Params.metadata "top_p" }}<span class="font-label-mono text-[11px] text-on-surface">{{ .Params.metadata.top_p }}</span>{{ else }}<span class="font-label-mono text-[11px] text-on-surface-variant/40">N/A</span>{{ end }}
           </div>
           <div class="flex flex-col">
             <span class="text-[9px] text-on-surface-variant uppercase tracking-wider">Temp</span>
-            <span class="font-label-mono text-[11px] text-on-surface">{{ .Params.metadata.temperature | default "0.8" }}</span>
+            {{ if isset .Params.metadata "temperature" }}<span class="font-label-mono text-[11px] text-on-surface">{{ .Params.metadata.temperature }}</span>{{ else }}<span class="font-label-mono text-[11px] text-on-surface-variant/40">N/A</span>{{ end }}
+          </div>
+          <div class="flex flex-col">
+            <span class="text-[9px] text-on-surface-variant uppercase tracking-wider">Rep. Penalty</span>
+            {{ if isset .Params.metadata "repetition_penalty" }}<span class="font-label-mono text-[11px] text-on-surface">{{ .Params.metadata.repetition_penalty }}</span>{{ else }}<span class="font-label-mono text-[11px] text-on-surface-variant/40">N/A</span>{{ end }}
           </div>
         </div>
+        {{ if or $voiceName $voiceUrl }}
+        <div class="pt-2 border-t border-white/[0.04] flex items-start gap-1.5">
+          <span class="text-[9px] text-on-surface-variant uppercase tracking-wider shrink-0 mt-0.5">Voice</span>
+          {{ if $voiceUrl }}
+            <a href="{{ $voiceUrl }}" target="_blank" rel="noopener" class="text-[11px] text-primary hover:text-white hover:underline break-words whitespace-normal flex flex-wrap items-center gap-1 min-w-0 flex-1">
+              <span class="break-words">{{ $voiceName | default $voiceUrl }}</span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0"><path d="M7 17L17 7"/><path d="M7 7h10v10"/></svg>
+            </a>
+          {{ else }}
+            <span class="text-[11px] text-on-surface break-words whitespace-normal flex-1 min-w-0">{{ $voiceName }}</span>
+          {{ end }}
+        </div>
+        {{ end }}
+        <!-- Rail footer: Download only -->
+        <div class="mt-auto pt-3 border-t border-[#1f1f1f] flex flex-col gap-2">
+          <a href="{{ $audio }}" download class="text-xs text-primary hover:text-white flex items-center gap-1 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download-icon lucide-download"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>
+            Download
+          </a>
+        </div>
       </div>
-    </div>
-    <div class="mt-4 flex items-center justify-end border-t border-[#1f1f1f] pt-2 shrink-0">
-      <a href="{{ $audio }}" download class="text-xs text-primary hover:text-white hover:scale-105 flex items-center gap-1 transition-all duration-300">
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 256 256"><path d="M240,136v64a16,16,0,0,1-16,16H32a16,16,0,0,1-16-16V136a8,8,0,0,1,16,0v64H224V136a8,8,0,0,1,16,0Zm-108.24,4.24a8,8,0,0,0,11.32,0l40-40a8,8,0,0,0-11.32-11.32L136,116.69V32a8,8,0,0,0-16,0v84.69L93.66,88.93a8,8,0,0,0-11.32,11.32Z"/></svg>
-        Download
-      </a>
+      <!-- RIGHT: Recipe — takes remaining width, tags at bottom -->
+      <div class="detail-recipe">
+        <div class="flex items-center justify-between gap-2 mb-2 shrink-0">
+          <span class="text-xs text-on-surface-variant font-bold uppercase tracking-wider shrink-0">Recipe</span>
+          <button class="copy-detail-btn text-[11px] font-medium text-primary hover:text-white flex items-center gap-1.5 transition-colors shrink-0" data-copy="{{ .Params.metadata.prompt_text | default "" }}" title="Copy prompt">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-copy-icon lucide-copy"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+            Copy
+          </button>
+        </div>
+        <div class="prompt-scroll w-full flex-1 overflow-y-auto overflow-x-hidden rounded-md border border-white/[6%] bg-black/20 p-2.5 scrollbar-thin">
+          <p class="text-sm text-on-surface cursor-pointer hover:text-primary transition-colors leading-relaxed prompt-text break-words whitespace-pre-wrap" title="Click to copy">{{ .Params.metadata.prompt_text | default "" }}</p>
+        </div>
+        <!-- Tags at bottom of prompt section -->
+        <div class="mt-2 pt-2 border-t border-white/[0.06] flex flex-wrap gap-1">
+          {{ range .Params.tags }}
+            <button type="button" class="card-filter tag font-label-mono text-[10px] bg-white/[7%] border border-white/[12%] text-gray-300 px-1.5 py-0.5 rounded hover:bg-white/[12%] hover:border-primary/40 hover:text-white transition-all" data-filter="tag:{{ . }}">#{{ . }}</button>
+          {{ end }}
+        </div>
+      </div>
     </div>
   </div>
 </div>

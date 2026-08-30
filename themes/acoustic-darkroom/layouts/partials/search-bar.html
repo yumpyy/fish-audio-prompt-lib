@@ -2,10 +2,8 @@
 <div class="max-w-2xl mx-auto mb-12 flex flex-col items-center gap-4">
   <div id="search-wrap" class="group/input relative w-full rounded-full p-[1px] transition duration-300" style="background: rgba(255,255,255,0.06)">
     <div class="relative w-full">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256" class="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/60 pointer-events-none z-10">
-        <path d="M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z"/>
-      </svg>
-      <input id="search-input" type="text" class="w-full border-none bg-[#0a0a0a] rounded-full py-3 pl-12 pr-4 text-on-surface placeholder:text-on-surface-variant/30 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 transition duration-200" placeholder="Search &quot;kawaii neko girl&quot; · #tag · @model · lang:japanese" autocomplete="off"/>
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search-icon lucide-search absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/60 pointer-events-none z-10"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="search-input" type="text" class="w-full border-none bg-[#0a0a0a] rounded-full py-3 pl-12 pr-4 text-on-surface placeholder:text-on-surface-variant/30 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 transition duration-200" placeholder="Search &quot;kawaii neko girl&quot; · #tag · @model · voice:Documentary · lang:japanese" autocomplete="off"/>
     </div>
   </div>
 
@@ -24,10 +22,10 @@
     <button class="filter-chip px-3 py-1 rounded-full border border-red-500/30 text-label-mono text-[11px] text-red-400/70 hover:border-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all duration-300" data-filter="nsfw:true">18+</button>
   </div>
 
-  <!-- Model Filter -->
+  <!-- Model Filter — only s2.1-pro, s2-pro, s1, drama-3 -->
   <div class="flex flex-wrap justify-center gap-2">
     <span class="text-label-mono text-[10px] text-on-surface-variant uppercase tracking-widest mr-2 self-center">Model:</span>
-    {{ $models := slice "S2.1 Pro" "S2.0" "S1.5" "S1.0" }}
+    {{ $models := slice "s2.1-pro" "s2-pro" "s1" "drama-3" }}
     {{ range $models }}
       <button class="filter-chip px-3 py-1 rounded-full border border-white/[12%] text-label-mono text-[11px] text-gray-400 hover:border-primary/40 hover:text-white hover:bg-white/[7%] transition-all duration-300" data-filter="model:{{ . }}">{{ . }}</button>
     {{ end }}

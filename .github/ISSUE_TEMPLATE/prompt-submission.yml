@@ -36,10 +36,10 @@ body:
       label: Model
       description: FishSpeech model used to generate/infer this prompt.
       options:
-        - S2.1 Pro
-        - S1.1
-        - S1
-        - Other (mention in notes)
+        - s2.1-pro
+        - s2-pro
+        - s1
+        - drama-3
     validations:
       required: true
 
@@ -51,6 +51,20 @@ body:
       placeholder: en
     validations:
       required: true
+
+  - type: input
+    id: voice_name
+    attributes:
+      label: Voice name (optional)
+      description: Display name of the Fish Audio voice, e.g. "Documentary Narrator Voice".
+      placeholder: Documentary Narrator Voice
+
+  - type: input
+    id: voice_url
+    attributes:
+      label: Voice link (optional)
+      description: Link to the Fish Audio voice, e.g. https://fish.audio/m/06363c7577df4390aea3e466224a542d
+      placeholder: https://fish.audio/m/...
 
   - type: input
     id: tags
@@ -70,18 +84,39 @@ body:
       required: true
 
   - type: input
-    id: top_p
+    id: speed
     attributes:
-      label: Top P (optional)
-      description: Sampling parameter used. Leave empty to use the default `0.95`.
-      placeholder: "0.95"
+      label: Speed (optional)
+      description: Playback speed. Range 0.7 to 1.3. Leave empty for default `1.0`.
+      placeholder: "1.0"
+
+  - type: input
+    id: volume
+    attributes:
+      label: Volume (optional)
+      description: Volume adjustment in dB. Range -5 to 5. Leave empty for default `0`.
+      placeholder: "0"
 
   - type: input
     id: temperature
     attributes:
       label: Temperature (optional)
-      description: Sampling parameter used. Leave empty to use the default `0.8`.
-      placeholder: "0.8"
+      description: Sampling parameter. Lower = more deterministic. Leave empty for default `0.7`.
+      placeholder: "0.7"
+
+  - type: input
+    id: top_p
+    attributes:
+      label: Top P (optional)
+      description: Sampling parameter. Leave empty for default `0.7`.
+      placeholder: "0.7"
+
+  - type: input
+    id: repetition_penalty
+    attributes:
+      label: Repetition penalty (optional)
+      description: ">1.0 curbs repeated sounds. Leave empty for default `1.2`."
+      placeholder: "1.2"
 
   - type: dropdown
     id: nsfw

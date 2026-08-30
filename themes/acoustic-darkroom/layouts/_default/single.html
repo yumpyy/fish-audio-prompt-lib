@@ -36,7 +36,7 @@
         <svg id="pause-icon" class="hidden" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 256 256"><path d="M200,32H160a16,16,0,0,0-16,16V208a16,16,0,0,0,16,16h40a16,16,0,0,0,16-16V48A16,16,0,0,0,200,32Zm0,176H160V48h40ZM96,32H56A16,16,0,0,0,40,48V208a16,16,0,0,0,16,16H96a16,16,0,0,0,16-16V48A16,16,0,0,0,96,32Zm0,176H56V48H96Z"/></svg>
       </button>
       <div class="flex-1">
-        <div class="text-sm text-on-surface-variant mb-1">{{ .Params.duration | default "0:00" }}</div>
+        <div class="text-sm text-on-surface-variant mb-1 duration-display single-duration" id="single-duration">{{ .Params.duration | default "0:00" }}</div>
         <div class="w-full h-2 bg-surface-container-low rounded-full overflow-hidden">
           <div id="progress-bar" class="h-full bg-primary w-0 transition-all duration-100"></div>
         </div>
@@ -48,20 +48,22 @@
     <audio id="audio-element" src="{{ $audio }}" preload="metadata" class="w-full"></audio>
   </div>
 
-  <!-- Prompt Text -->
+  <!-- Prompt Text — restrictive rectangle, fixed size, scrollable -->
   <div class="bg-surface-container border border-outline-variant rounded-lg p-6 mb-8">
     <div class="flex items-center justify-between mb-3">
       <span class="text-label-mono text-[10px] text-on-surface-variant uppercase tracking-widest">Prompt Text</span>
       <button onclick="copyPrompt()" class="text-sm text-primary hover:text-white transition-colors flex items-center gap-1">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256"><path d="M216,32H88a8,8,0,0,0-8,8V80H40a8,8,0,0,0-8,8V216a8,8,0,0,0,8,8H168a8,8,0,0,0,8-8V176h40a8,8,0,0,0,8-8V40A8,8,0,0,0,216,32Zm-8,160H48V96H208ZM208,80H96V48H208Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-copy-icon lucide-copy"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
         Copy
       </button>
     </div>
-    <p id="prompt-text" class="text-body-md text-on-surface leading-relaxed">{{ .Params.metadata.prompt_text }}</p>
+    <div class="w-full h-[160px] max-h-[160px] overflow-y-auto overflow-x-hidden rounded-lg border border-white/[6%] bg-black/30 p-4 scrollbar-thin prompt-scroll">
+      <p id="prompt-text" class="text-body-md text-on-surface leading-relaxed break-words whitespace-pre-wrap">{{ .Params.metadata.prompt_text }}</p>
+    </div>
   </div>
 
-  <!-- Metadata Grid -->
-  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+  <!-- Metadata Grid — all optional: speed (0.7-1.3), volume (-5..5), temperature 0.7, top_p 0.7, repetition_penalty 1.2 -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
     <div class="bg-surface-container border border-outline-variant rounded-lg p-4">
       <span class="text-label-mono text-[10px] text-on-surface-variant uppercase tracking-widest block mb-1">Model</span>
       <a href="{{ "/models/" | relURL }}{{ .Params.model | urlize }}" class="text-on-surface hover:text-primary transition-colors">{{ .Params.model }}</a>
@@ -71,20 +73,59 @@
       <a href="{{ "/languages/" | relURL }}{{ .Params.language | urlize }}" class="text-on-surface hover:text-primary transition-colors">{{ .Params.language }}</a>
     </div>
     <div class="bg-surface-container border border-outline-variant rounded-lg p-4">
-      <span class="text-label-mono text-[10px] text-on-surface-variant uppercase tracking-widest block mb-1">Top P</span>
-      <span class="font-label-mono text-on-surface">{{ .Params.metadata.top_p }}</span>
+      <span class="text-label-mono text-[10px] text-on-surface-variant uppercase tracking-widest block mb-1">Speed</span>
+      {{ if isset .Params.metadata "speed" }}<span class="font-label-mono text-on-surface">{{ .Params.metadata.speed }}</span><span class="text-[10px] text-on-surface-variant/60 ml-1">0.7–1.3</span>{{ else }}<span class="font-label-mono text-on-surface-variant/40">N/A</span>{{ end }}
     </div>
     <div class="bg-surface-container border border-outline-variant rounded-lg p-4">
-      <span class="text-label-mono text-[10px] text-on-surface-variant uppercase tracking-widest block mb-1">Temperature</span>
-      <span class="font-label-mono text-on-surface">{{ .Params.metadata.temperature }}</span>
+      <span class="text-label-mono text-[10px] text-on-surface-variant uppercase tracking-widest block mb-1">Volume</span>
+      {{ if isset .Params.metadata "volume" }}<span class="font-label-mono text-on-surface">{{ .Params.metadata.volume }}</span><span class="text-[10px] text-on-surface-variant/60 ml-1">-5–5</span>{{ else }}<span class="font-label-mono text-on-surface-variant/40">N/A</span>{{ end }}
     </div>
   </div>
+  <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+    <div class="bg-surface-container border border-outline-variant rounded-lg p-4">
+      <span class="text-label-mono text-[10px] text-on-surface-variant uppercase tracking-widest block mb-1">Temperature</span>
+      {{ if isset .Params.metadata "temperature" }}<span class="font-label-mono text-on-surface">{{ .Params.metadata.temperature }}</span>{{ else }}<span class="font-label-mono text-on-surface-variant/40">N/A</span>{{ end }}
+    </div>
+    <div class="bg-surface-container border border-outline-variant rounded-lg p-4">
+      <span class="text-label-mono text-[10px] text-on-surface-variant uppercase tracking-widest block mb-1">Top P</span>
+      {{ if isset .Params.metadata "top_p" }}<span class="font-label-mono text-on-surface">{{ .Params.metadata.top_p }}</span>{{ else }}<span class="font-label-mono text-on-surface-variant/40">N/A</span>{{ end }}
+    </div>
+    <div class="bg-surface-container border border-outline-variant rounded-lg p-4">
+      <span class="text-label-mono text-[10px] text-on-surface-variant uppercase tracking-widest block mb-1">Repetition Penalty</span>
+      {{ if isset .Params.metadata "repetition_penalty" }}<span class="font-label-mono text-on-surface">{{ .Params.metadata.repetition_penalty }}</span>{{ else }}<span class="font-label-mono text-on-surface-variant/40">N/A</span>{{ end }}
+    </div>
+  </div>
+
+  <!-- Voice (optional) -->
+  {{ $voiceName := or .Params.voice_name .Params.metadata.voice_name }}
+  {{ $voiceUrl := or .Params.voice_url .Params.metadata.voice_url .Params.voice_link .Params.metadata.voice_link }}
+  {{ if or $voiceName $voiceUrl }}
+  <div class="flex items-start justify-between gap-3 bg-surface-container border border-outline-variant rounded-lg p-4 mb-4">
+    <div class="flex flex-col flex-1 min-w-0">
+      <span class="text-label-mono text-[10px] text-on-surface-variant uppercase tracking-widest block mb-1">Voice</span>
+      {{ if $voiceUrl }}
+        <a href="{{ $voiceUrl }}" target="_blank" rel="noopener" class="text-sm text-primary hover:text-white hover:underline break-words whitespace-normal flex flex-wrap items-center gap-1.5 min-w-0">
+          <span class="break-words">{{ $voiceName | default $voiceUrl }}</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 256 256" class="shrink-0"><path d="M224,136v64a16,16,0,0,1-16,16H16a16,16,0,0,1-16-16V136a8,8,0,0,1,16,0v64H224V136a8,8,0,0,1,16,0ZM200,32H88a8,8,0,0,0-8,8V80H40a8,8,0,0,0-8,8V216a8,8,0,0,0,8,8H168a8,8,0,0,0,8-8V176h40a8,8,0,0,0,8-8V40A8,8,0,0,0,200,32Zm-8,160H48V96H208ZM208,80H96V48H208Z"/></svg>
+        </a>
+      {{ else }}
+        <span class="text-sm text-on-surface break-words whitespace-normal">{{ $voiceName }}</span>
+      {{ end }}
+    </div>
+    {{ if $voiceUrl }}
+    <a href="{{ $voiceUrl }}" target="_blank" rel="noopener" class="text-xs text-on-surface-variant hover:text-primary flex items-center gap-1 shrink-0 mt-1">
+      Open in Fish Audio
+      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7"/><path d="M7 7h10v10"/></svg>
+    </a>
+    {{ end }}
+  </div>
+  {{ end }}
 
   <!-- Download -->
   <div class="flex items-center justify-between bg-surface-container border border-outline-variant rounded-lg p-4">
     <span class="text-sm text-on-surface-variant">Audio file</span>
-    <a href="{{ $audio }}" download class="text-sm text-primary hover:text-white hover:scale-105 flex items-center gap-1 transition-all duration-300">
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256"><path d="M240,136v64a16,16,0,0,1-16,16H32a16,16,0,0,1-16-16V136a8,8,0,0,1,16,0v64H224V136a8,8,0,0,1,16,0Zm-108.24,4.24a8,8,0,0,0,11.32,0l40-40a8,8,0,0,0-11.32-11.32L136,116.69V32a8,8,0,0,0-16,0v84.69L93.66,88.93a8,8,0,0,0-11.32,11.32Z"/></svg>
+    <a href="{{ $audio }}" download class="text-sm text-primary hover:text-white flex items-center gap-1 transition-colors">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download-icon lucide-download"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>
       Download
     </a>
   </div>

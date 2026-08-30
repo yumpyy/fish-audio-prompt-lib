@@ -133,26 +133,58 @@
 
 @media (max-width: 768px) {
   .bg-glow-blob {
-    opacity: 0.6;
+    opacity: 0.45;
     filter: blur(70px);
+    animation: none !important;
+    transform: none !important;
+    will-change: auto;
   }
   .blob-a {
     width: 60vw;
     height: 60vw;
     left: -18vw;
     top: -12vh;
+    animation: none !important;
+    transform: none !important;
   }
   .blob-b {
     width: 55vw;
     height: 55vw;
     left: 28vw;
     top: 24vh;
+    animation: none !important;
+    transform: none !important;
   }
   .blob-c {
     width: 58vw;
     height: 58vw;
     right: -16vw;
     bottom: -8vh;
+    animation: none !important;
+    transform: none !important;
+  }
+  /* Remove translucency from cards on mobile — solid, no idle animation */
+  .original-card,
+  .detail-card,
+  .detail-card .prompt-scroll,
+  .bg-surface-container,
+  .bg-surface-container-low {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  .original-card {
+    background: #0a0a0a !important;
+  }
+  .detail-card {
+    background: #0a0a0a !important;
+  }
+  .detail-card .prompt-scroll,
+  .prompt-scroll {
+    background: #0a0a0a !important;
+    background-color: #0a0a0a !important;
+  }
+  .sample-card-container {
+    will-change: auto;
   }
 }
 
@@ -358,32 +390,144 @@ body::before {
   overflow: hidden;
 }
 
-/* Detail Card - inline expanding from card */
+/* Detail Card - popup landscape, side-by-side rail */
 .detail-card {
   position: absolute;
-  top: calc(100% + 12px);
-  left: 0;
-  width: 100%;
+  top: 0;
+  left: calc(100% + 16px);
+  width: 520px;
+  max-width: calc(100vw - 32px);
   height: auto;
-  max-height: 250px;
-  overflow-y: auto;
+  max-height: 340px;
+  overflow: hidden;
   background-color: #0a0a0a;
   border: 1px solid #1f1f1f;
   border-radius: 0.5rem;
   padding: 1rem;
   opacity: 0;
-  transform: translateY(-20px) scale(0.95);
-  transform-origin: top center;
+  transform: translateX(12px) scale(0.98);
+  transform-origin: left center;
   transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   pointer-events: none;
   z-index: 25;
+  display: block;
+}
+
+.detail-card.pos-left {
+  left: auto;
+  right: calc(100% + 16px);
+  transform: translateX(-12px) scale(0.98);
+  transform-origin: right center;
+}
+
+.detail-card.pos-below {
+  top: calc(100% + 12px);
+  left: 0;
+  right: auto;
+  width: 100%;
+  max-width: none;
+  transform: translateY(-12px) scale(0.95);
+  transform-origin: top center;
+}
+
+/* In-flow grid-span variant — kept for fallback, same visual as popup but in-flow */
+.detail-card.is-inflow {
+  position: relative;
+  grid-column: 1 / -1;
+  width: auto;
+  height: auto;
+  max-height: none;
+  overflow: visible;
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+  z-index: 40;
+  margin-top: 0;
+  display: block;
+  box-shadow: 0 0 0 1px #808080, 0 30px 60px -12px rgba(0, 0, 0, 0.8);
+}
+
+.detail-inner {
+  display: grid;
+  grid-template-columns: 168px minmax(0, 1fr);
+  gap: 0;
+  height: 100%;
+  max-height: 268px; /* card max-height minus padding (32px) */
+}
+
+.detail-meta {
+  padding-right: 16px;
+  border-right: 1px solid #1f1f1f;
   display: flex;
   flex-direction: column;
+  gap: 10px;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.detail-recipe {
+  padding-left: 16px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.detail-recipe .prompt-scroll {
+  flex: 1;
+  min-height: 64px;
+  max-height: 180px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Mobile: single column, recipe first, metadata second — popup always below full-width */
+@media (max-width: 768px) {
+  .detail-card,
+  .detail-card.pos-left,
+  .detail-card.pos-right {
+    top: calc(100% + 12px);
+    left: 0;
+    right: auto;
+    width: 100%;
+    max-width: none;
+    max-height: 380px;
+    overflow-y: auto;
+    transform: translateY(-12px) scale(0.95);
+    transform-origin: top center;
+  }
+  .detail-card.is-inflow {
+    position: static;
+    grid-column: 1 / -1;
+    max-height: none;
+    overflow: visible;
+    transform: none;
+  }
+  .detail-inner {
+    grid-template-columns: 1fr;
+    grid-template-areas: "recipe" "meta";
+  }
+  .detail-meta {
+    grid-area: meta;
+    border-right: none;
+    border-top: 1px solid #1f1f1f;
+    padding-right: 0;
+    padding-top: 12px;
+    margin-top: 12px;
+  }
+  .detail-recipe {
+    grid-area: recipe;
+    padding-left: 0;
+  }
+  .detail-recipe .prompt-scroll {
+    max-height: 140px;
+  }
 }
 
 .sample-card-container.active .detail-card {
   opacity: 1;
-  transform: translateY(0) scale(1);
+  transform: none;
   pointer-events: auto;
   box-shadow: 0 0 0 1px #808080, 0 30px 60px -12px rgba(0, 0, 0, 0.8);
 }
@@ -393,17 +537,10 @@ body::before {
   transform: scale(1.02);
 }
 
-/* Prompt text word animation - gap via margin so --minify whitespace collapse doesn't join words */
-.prompt-text span {
-  opacity: 0;
-  display: inline-block;
-  margin-right: 0.28em;
-}
-.prompt-text span:last-child {
-  margin-right: 0;
-}
-.sample-card-container.active .prompt-text span {
-  animation: typeIn 0.3s ease forwards;
+/* Prompt text — plain, no word-by-word animation */
+.prompt-text {
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 /* Playing state */

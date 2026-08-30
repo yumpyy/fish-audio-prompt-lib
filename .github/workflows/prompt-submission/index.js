@@ -68,7 +68,7 @@ function requireEnv(name) {
   return value;
 }
 
-const MARKDOWN_LINK_RE = /\[[^\]]*\]\(\s*([^)\s]+)\s*\)/g;
+const MARKDOWN_LINK_RE = /\[(?:[^\[\]]|\[[^\]]*\])*\]\(\s*([^)\s]+)\s*\)/g;
 
 function isAttachmentHost(url) {
   return /\/user-attachments\//.test(url) || /\.githubusercontent\.com\//.test(url);
@@ -107,8 +107,12 @@ function parseFormSections(body) {
 function findAudioAttachments(body) {
   const attachments = [];
   let match;
-  while ((match = MARKDOWN_LINK_RE.exec(body)) !== null) {
-    const name = match[0].slice(match[0].indexOf('[') + 1, match[0].indexOf(']'));
+  // Use a fresh regex to avoid lastIndex issues from stripAttachmentLinks
+  const linkRe = /\[(?:[^\[\]]|\[[^\]]*\])*\]\(\s*([^)\s]+)\s*\)/g;
+  while ((match = linkRe.exec(body)) !== null) {
+    const full = match[0];
+    const lastIdx = full.lastIndexOf('](');
+    const name = lastIdx !== -1 ? full.slice(1, lastIdx) : '';
     const url = match[1];
     const ext = path.extname(name).toLowerCase();
     if (isAttachmentHost(url) && name !== url && AUDIO_EXTENSIONS.has(ext)) {

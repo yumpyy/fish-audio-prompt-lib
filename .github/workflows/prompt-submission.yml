@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   process:
-    if: contains(github.event.issue.labels.*.name, 'prompt-submission')
+    if: startsWith(github.event.issue.title, 'Prompt:')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

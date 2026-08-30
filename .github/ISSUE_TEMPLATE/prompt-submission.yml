@@ -11,8 +11,9 @@ body:
         Thanks for contributing to the Fish Audio Prompt Library.
 
         1. Attach your audio file (mp3/wav/ogg/m4a/flac) using the **Audio file** field below. You can also drag it anywhere into the form body.
-        2. Fill in every required field below.
-        3. Submit. An automated pipeline will review it, upload your audio to the CDN, and open a pull request with your entry.
+        2. Fill in every required field below. Optional metadata (`speed` 0.7-1.3, `volume` -5..5, `temperature`/`top_p` 0.7, `repetition_penalty` 1.2, `voice_name`/`voice_url`) shows **N/A** when omitted. Supports multiline `prompt_text` (one `[emotion]` per line).
+        3. Models available: `s2.1-pro` · `s2-pro` · `s1` · `drama-3` (all optional except title/model/language/tags/prompt).
+        4. Submit. An automated pipeline will review it, upload your audio to the CDN, and open a pull request with your entry.
 
   - type: upload
     id: audio
@@ -79,7 +80,10 @@ body:
     id: prompt_text
     attributes:
       label: Prompt text
-      description: The exact voice prompt (the text that is spoken to produce the voice reference).
+      description: The exact voice prompt.
+      placeholder: |
+        [calm][measured confidence] Here, in the fluorescent wilds...
+        [curious] Watch as it approaches...
     validations:
       required: true
 

@@ -3,6 +3,12 @@ name: Prompt Submission Pipeline
 on:
   issues:
     types: [opened]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Issue number to test (e.g. 4)'
+        required: true
+        type: number
 
 permissions:
   contents: write
@@ -11,7 +17,7 @@ permissions:
 
 jobs:
   process:
-    if: startsWith(github.event.issue.title, 'Prompt:')
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.event.issue.title, 'Prompt:')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -31,7 +37,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue_number }}
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}

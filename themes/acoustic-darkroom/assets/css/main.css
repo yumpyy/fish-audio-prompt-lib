@@ -186,6 +186,31 @@
   .sample-card-container {
     will-change: auto;
   }
+  /* Kill ALL animations/transitions on mobile except the rainbow contribute button */
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0s !important;
+    transition-delay: 0s !important;
+  }
+  /* cards enter via fadeSlideUp with base opacity:0 — snap them visible */
+  .sample-card-container {
+    opacity: 1 !important;
+    animation: none !important;
+  }
+  /* exception: glowing contribute button keeps its rainbow animation */
+  .rainbow-button,
+  .rainbow-button::before {
+    animation-name: rainbow !important;
+    animation-duration: var(--speed, 2s) !important;
+    animation-delay: 0s !important;
+    animation-iteration-count: infinite !important;
+    animation-timing-function: linear !important;
+    transition-duration: 0s !important;
+  }
 }
 
 /* Keep page content below the ambient glow:

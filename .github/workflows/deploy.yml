@@ -2,15 +2,12 @@ name: Build and deploy
 on:
   push:
     branches: [master]
-    paths:
-      - 'content/**'
-      - 'themes/**'
-      - 'hugo.toml'
-      - 'archetypes/**'
-      - 'static/**'
-      - 'layouts/**'
-      - 'assets/**'
+    paths-ignore:
+      - 'content/prompts/**'
   workflow_dispatch:
+  # Optional: uncomment for one automatic deploy per day (04:30 UTC)
+  # schedule:
+  #   - cron: '30 4 * * *'
 permissions:
   contents: read
   pages: write
